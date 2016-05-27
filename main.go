@@ -188,7 +188,6 @@ func currentPath() string {
   return dir
 }
 
-
 func post(path string, config CaptureConfig, url string){
   file, err := os.Open(path)
   if err != nil {
@@ -204,12 +203,9 @@ func post(path string, config CaptureConfig, url string){
   content_type := body_writer.FormDataContentType()
   fmt.Println(content_type)
 
-
   /* Create a Form Field in a simpler way */
-  body_writer.WriteField("name", "New Site")
-  body_writer.WriteField("description", "This is the stuff that dreams are made of.")
+  body_writer.WriteField("name", config.Url)
   body_writer.WriteField("current_platform_user_token", config.AuthToken)
-
 
   /* Create a completely custom Form Part (or in this case, a file) */
   // http://golang.org/src/pkg/mime/multipart/writer.go?s=2274:2352#L86
@@ -218,7 +214,6 @@ func post(path string, config CaptureConfig, url string){
     log.Fatal(err)
   }
   _, err = io.Copy(part, file)
-
 
   /* Close the body and send the request */
   body_writer.Close()
