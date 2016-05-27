@@ -6,6 +6,7 @@ import (
   "fmt"
   "os"
   "io"
+  "errors"
   "io/ioutil"
   "log"
   "os/exec"
@@ -13,9 +14,21 @@ import (
   "mime/multipart"
   "path/filepath"
 
+  "github.com/deiwin/interact"
   "github.com/jhoonb/archivex"
   "github.com/satori/go.uuid"
   "github.com/urfave/cli"
+)
+
+// First let's declare some simple input validators
+var (
+  checkNotEmpty = func(input string) error {
+    // note that the inputs provided to these checks are already trimmed
+    if input == "" {
+      return errors.New("Input should not be empty!")
+    }
+    return nil
+  }
 )
 
 type CaptureConfig struct {
@@ -28,24 +41,11 @@ type CaptureConfig struct {
 }
 
 func main() {
-  url := "http://code.notable.dev/api/cli/sites"
+  url := "https://code.zurb.com/api/cli/sites"
   app := cli.NewApp()
   app.EnableBashCompletion = true
   app.Name = "notable"
   app.Usage = "Interface with Notable"
-
-  // app.Flags = []cli.Flag {
-  //   cli.StringFlag{
-  //     Name: "dest, d",
-  //     Value: ".",
-  //     Usage: "destination",
-  //   },
-  //   cli.StringFlag{
-  //     Name: "token, t",
-  //     Value: "empty",
-  //     Usage: "User Auth Token",
-  //   },
-  // }
 
   app.Commands = []cli.Command{
     {
@@ -82,6 +82,27 @@ func main() {
         return nil
       },
     },
+    {
+      Name:      "login",
+      Aliases:   []string{"l"},
+      Usage:     "Authenticate the CLI",
+      Action: func(c *cli.Context) error {
+        actor := interact.NewActor(os.Stdin, os.Stdout)
+        message := "Please enter your email address"
+        email, err := actor.PromptAndRetry(message, checkNotEmpty)
+        if err != nil {
+          log.Fatal(err)
+        }
+        message = "Please enter your password"
+        password, err := actor.PromptAndRetry(message, checkNotEmpty)
+        if err != nil {
+          log.Fatal(err)
+        }
+        // TODO: post login and get auth token
+        fmt.Printf("Thanks! (%s, %s)\n", email, password)
+        return nil
+      },
+    },
   }
 
   app.Action = func(c *cli.Context) error {
@@ -105,7 +126,7 @@ func fetch(c CaptureConfig) {
     "--html-extension",
     "--convert-links",
     "--no-parent",
-    fmt.Sprintf("--directory-prefix=%s", c.ID),
+    fmt.Sprintf("--directory-prefix=captures/%s", c.ID),
     c.Url,
   }
   cmd := exec.Command("wget", args...)
@@ -139,16 +160,16 @@ func fetch(c CaptureConfig) {
 }
 
 func zip(id string) {
-  fmt.Printf("Source directory: %s", id)
+  path := fmt.Sprintf("captures/%s", id)
   zip := new(archivex.ZipFile)
-  zip.Create(id)
-  zip.AddAll(id, true)
+  zip.Create(path)
+  zip.AddAll(path, true)
   zip.Close()
 }
 
 func upload(config CaptureConfig, url string) {
-  path := fmt.Sprintf("%s/%s.zip", currentPath(), config.ID)
-  post(path, config)
+  path := fmt.Sprintf("%s/captures/%s.zip", currentPath(), config.ID)
+  post(path, config, url)
 }
 
 func wGetCheck() {
@@ -168,15 +189,12 @@ func currentPath() string {
 }
 
 
-func post(path string, config CaptureConfig){
+func post(path string, config CaptureConfig, url string){
   file, err := os.Open(path)
   if err != nil {
     log.Fatal(err)
   }
   defer file.Close()
-  target := "http://code.notable.dev/api/cli/sites"
-  //target := "http://foobar3000.com/echo"
-
 
   /* Create a buffer to hold this multi-part form */
   body_buf := bytes.NewBufferString("")
@@ -204,11 +222,10 @@ func post(path string, config CaptureConfig){
 
   /* Close the body and send the request */
   body_writer.Close()
-  resp, err := http.Post(target, content_type, body_buf)
+  resp, err := http.Post(url, content_type, body_buf)
   if nil != err {
     panic(err.Error())
   }
-
 
   /* Handle the response */
   defer resp.Body.Close()
