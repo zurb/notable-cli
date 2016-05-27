@@ -9,16 +9,25 @@ import (
   "errors"
   "io/ioutil"
   "log"
+  "net/url"
   "os/exec"
   "net/http"
   "mime/multipart"
   "path/filepath"
+  "encoding/json"
 
   "github.com/deiwin/interact"
   "github.com/jhoonb/archivex"
   "github.com/satori/go.uuid"
   "github.com/urfave/cli"
 )
+
+
+func check(e error) {
+  if e != nil {
+    panic(e)
+  }
+}
 
 // First let's declare some simple input validators
 var (
@@ -40,8 +49,15 @@ type CaptureConfig struct {
   AuthToken string
 }
 
+// Configuration is the global configuration object
+type EnvConfig struct {
+  AuthToken      string `json:"token"`
+}
+
+var envConfig = EnvConfig{}
+
 func main() {
-  url := "https://code.zurb.com/api/cli/sites"
+  url := "http://code.notable.dev/api/cli/sites"
   app := cli.NewApp()
   app.EnableBashCompletion = true
   app.Name = "notable"
@@ -49,7 +65,7 @@ func main() {
 
   app.Commands = []cli.Command{
     {
-      Name:      "capture",
+      Name:      "code",
       Aliases:   []string{"c"},
       Usage:     "Send local site to Notable",
       Flags: []cli.Flag {
@@ -65,13 +81,14 @@ func main() {
         },
       },
       Action: func(c *cli.Context) error {
+        loadAndCheckEnv()
+
         id := fmt.Sprintf("%s", uuid.NewV4())
         config := CaptureConfig{
           Recursive: "false",
           Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36",
           Url: c.Args().First(),
           Path: c.String("dest"),
-          AuthToken: c.String("token"),
           ID: id,
         }
 
@@ -99,19 +116,60 @@ func main() {
           log.Fatal(err)
         }
         // TODO: post login and get auth token
-        fmt.Printf("Thanks! (%s, %s)\n", email, password)
+        fetchToken(email, password)
         return nil
       },
     },
   }
 
-  app.Action = func(c *cli.Context) error {
-    fmt.Println("specify command")
+  app.Run(os.Args)
+}
 
-    return nil
+func loadAndCheckEnv() {
+  config, err := readAuth()
+
+  if err != nil {
+    log.Fatal(err)
   }
 
-  app.Run(os.Args)
+  envConfig = config
+}
+
+func writeAuth(t string) {
+  token_data := []byte(t)
+  err := ioutil.WriteFile("._auth", token_data, 0644)
+  check(err)
+}
+
+func readAuth() (EnvConfig, error) {
+  file, err := ioutil.ReadFile("._auth")
+
+  if err != nil {
+    return EnvConfig{}, err
+  }
+
+  return EnvConfig{
+    AuthToken: string(file),
+  }, nil
+}
+
+func fetchToken(e string, p string) {
+  endpoint := "http://notable.dev/api/v5/platform_users/auth_cli"
+  v := url.Values{}
+  v.Set("email", e)
+  v.Add("password", p)
+  var err error
+
+  resp, err := http.PostForm(endpoint, v)
+  if nil != err {
+    panic(err.Error())
+  }
+
+  defer resp.Body.Close()
+  body, err := ioutil.ReadAll(resp.Body)
+
+  err = json.Unmarshal(body, &envConfig)
+  writeAuth(envConfig.AuthToken)
 }
 
 func fetch(c CaptureConfig) {
@@ -205,7 +263,7 @@ func post(path string, config CaptureConfig, url string){
 
   /* Create a Form Field in a simpler way */
   body_writer.WriteField("name", config.Url)
-  body_writer.WriteField("current_platform_user_token", config.AuthToken)
+  body_writer.WriteField("token", envConfig.AuthToken)
 
   /* Create a completely custom Form Part (or in this case, a file) */
   // http://golang.org/src/pkg/mime/multipart/writer.go?s=2274:2352#L86
