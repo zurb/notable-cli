@@ -16,9 +16,11 @@ import (
   "path/filepath"
   "encoding/json"
 
+  "github.com/skratchdot/open-golang/open"
   "github.com/deiwin/interact"
   "github.com/jhoonb/archivex"
   "github.com/satori/go.uuid"
+  "github.com/fatih/color"
   "github.com/urfave/cli"
 )
 
@@ -92,9 +94,8 @@ func main() {
           ID: id,
         }
 
-        fmt.Printf("Directory ID: %s", config.ID)
         fetch(config)
-        zip(config.ID)
+        zip(config)
         upload(config, url)
         return nil
       },
@@ -105,12 +106,12 @@ func main() {
       Usage:     "Authenticate the CLI",
       Action: func(c *cli.Context) error {
         actor := interact.NewActor(os.Stdin, os.Stdout)
-        message := "Please enter your email address"
+        message := "Please enter your Notable email address"
         email, err := actor.PromptAndRetry(message, checkNotEmpty)
         if err != nil {
           log.Fatal(err)
         }
-        message = "Please enter your password"
+        message = "Please enter your Notable password"
         password, err := actor.PromptAndRetry(message, checkNotEmpty)
         if err != nil {
           log.Fatal(err)
@@ -174,6 +175,7 @@ func fetchToken(e string, p string) {
 
 func fetch(c CaptureConfig) {
   wGetCheck()
+  color.Cyan("Capturing url...\n")
   args := []string{
     fmt.Sprintf("-U '%s'", c.Agent),
     "--no-clobber",
@@ -211,14 +213,18 @@ func fetch(c CaptureConfig) {
 
   err = cmd.Wait()
   if err != nil {
-    fmt.Fprintln(os.Stderr, "Error waiting for Cmd", err)
-    // os.Exit(1)
+    text := fmt.Sprintf("%s", err)
+    if text == "exit status 4" {
+      fmt.Fprintln(os.Stderr, "The URL you specified is not accessible.")
+      os.Exit(1)
+    }
   }
 
 }
 
-func zip(id string) {
-  path := fmt.Sprintf("captures/%s", id)
+func zip(config CaptureConfig) {
+  color.Cyan("Compressing...\n")
+  path := fmt.Sprintf("captures/%s", config.ID)
   zip := new(archivex.ZipFile)
   zip.Create(path)
   zip.AddAll(path, true)
@@ -226,16 +232,17 @@ func zip(id string) {
 }
 
 func upload(config CaptureConfig, url string) {
+  color.Cyan("Uploading...\n")
   path := fmt.Sprintf("%s/captures/%s.zip", currentPath(), config.ID)
   post(path, config, url)
 }
 
 func wGetCheck() {
-  path, err := exec.LookPath("wget")
+  _, err := exec.LookPath("wget")
   if err != nil {
     log.Fatal("\n\n[ERROR] Please install wget using Homebrew:\nbrew up && brew install wget")
   }
-  fmt.Printf("wget is available at %s\n", path)
+  // fmt.Printf("\nwget is available at %s\n", path)
 }
 
 func currentPath() string {
@@ -256,10 +263,10 @@ func post(path string, config CaptureConfig, url string){
   /* Create a buffer to hold this multi-part form */
   body_buf := bytes.NewBufferString("")
   body_writer := multipart.NewWriter(body_buf)
-  boundary := body_writer.Boundary()
-  fmt.Println(boundary)
+  // boundary := body_writer.Boundary()
+  // fmt.Println(boundary)
   content_type := body_writer.FormDataContentType()
-  fmt.Println(content_type)
+  // fmt.Println(content_type)
 
   /* Create a Form Field in a simpler way */
   body_writer.WriteField("name", config.Url)
@@ -289,5 +296,12 @@ func post(path string, config CaptureConfig, url string){
     return
   }
 
-  fmt.Println(string(body[:]))
+  var data map[string]interface{}
+  if err := json.Unmarshal(body, &data); err != nil {
+    panic(err)
+  }
+
+  color.Green("Done! Go give feedback!")
+
+  open.Run(data["url"].(string))
 }
