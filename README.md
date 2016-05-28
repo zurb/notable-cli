@@ -16,7 +16,7 @@ You are now ready to go!
 
 ## Authenticate
 
-Before you can use the CLI, you must authenticate it with your Notable account.
+Before you can use the CLI, you must authenticate it with your [Notable](http://zurb.com/notable) account.
 
 ```
 notable login
