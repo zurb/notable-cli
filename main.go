@@ -6,6 +6,7 @@ import (
   "fmt"
   "os"
   "io"
+  "time"
   "errors"
   "io/ioutil"
   "log"
@@ -18,6 +19,7 @@ import (
 
   "github.com/skratchdot/open-golang/open"
   "github.com/mitchellh/go-homedir"
+  "github.com/briandowns/spinner"
   "github.com/deiwin/interact"
   "github.com/jhoonb/archivex"
   "github.com/satori/go.uuid"
@@ -28,9 +30,11 @@ import (
 
 var platformHost = "https://notable.zurb.com"
 var codeHost = "https://code.zurb.com"
-var version = "0.0.5"
-var captureDirectory = "notable_captures"
+var version = "0.0.6"
+var captureDirectoryPrefix = "notable-captures"
+var captureDirectory string
 var authPath string
+var s = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
 
 func check(e error) {
   if e != nil {
@@ -68,7 +72,7 @@ var envConfig = EnvConfig{}
 func main() {
   url := fmt.Sprintf("%s/api/cli/sites", codeHost)
   directoryID := fmt.Sprintf("%s", uuid.NewV4())
-  captureDirectory = fmt.Sprintf("%s-%s", captureDirectory, directoryID)
+  captureDirectory = fmt.Sprintf("%s-%s", captureDirectoryPrefix, directoryID)
   authRoot, err := homedir.Dir()
   if err != nil {
     color.Red("Cannot access your home directory to check for authentication.")
@@ -227,7 +231,9 @@ func fetchToken(e string, p string) {
 
 func fetch(c CaptureConfig) {
   wGetCheck()
-  color.Cyan("Capturing url...\n")
+  s.Prefix = ""
+  s.Suffix = " Capture: running..."
+  s.Start()
   args := []string{
     fmt.Sprintf("-U '%s'", c.Agent),
     "--no-clobber",
@@ -271,21 +277,27 @@ func fetch(c CaptureConfig) {
       os.Exit(1)
     }
   }
+  s.Stop()
+  color.Cyan("✓ Capture: complete!\n")
 
 }
 
 func zip(config CaptureConfig) {
-  color.Cyan("Compressing...\n")
+  s.Suffix = " Compress: running..."
+  s.Start()
   path := fmt.Sprintf("%s/%s", captureDirectory, config.ID)
   zip := new(archivex.ZipFile)
   zip.Create(path)
   zip.AddAll(path, true)
   zip.Close()
   os.RemoveAll(path)
+  s.Stop()
+  color.Cyan("✓ Compress: complete!\n")
 }
 
 func upload(config CaptureConfig, url string) {
-  color.Cyan("Uploading...\n")
+  s.Suffix = " Upload: running..."
+  s.Start()
   path := fmt.Sprintf("%s/%s/%s.zip", currentPath(), captureDirectory, config.ID)
   post(path, config, url)
 }
@@ -356,7 +368,9 @@ func post(path string, config CaptureConfig, url string){
   os.Remove(path)
   os.Remove(fmt.Sprintf("%s/%s/", currentPath(), captureDirectory))
 
-  color.Green("Done! Go give feedback!")
+  s.Stop()
+  color.Cyan("✓ Upload: complete!\n\n")
+  color.Cyan("Done! Go give feedback!")
   responseUrl := data["url"].(string)
   color.Magenta(responseUrl)
 
