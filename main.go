@@ -28,30 +28,27 @@ import (
   "github.com/urfave/cli"
 )
 
-var platformHost = "https://notable.zurb.com"
-var codeHost = "https://code.zurb.com"
-var version = "0.0.7"
-var captureDirectoryPrefix = "notable-captures"
-var captureDirectory string
-var authPath string
-var s = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
+var (
+  platformHost = "https://notable.zurb.com"
+  codeHost = "https://code.zurb.com"
+  version = "0.0.8"
+  checkNotEmpty = func(input string) error {
+    if input == "" {
+      return errors.New("Input should not be empty!")
+    }
+    return nil
+  }
+  captureDirectoryPrefix = "notable-captures"
+  captureDirectory string
+  authPath string
+  s = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
+)
 
 func check(e error) {
   if e != nil {
     panic(e)
   }
 }
-
-// First let's declare some simple input validators
-var (
-  checkNotEmpty = func(input string) error {
-    // note that the inputs provided to these checks are already trimmed
-    if input == "" {
-      return errors.New("Input should not be empty!")
-    }
-    return nil
-  }
-)
 
 type CaptureConfig struct {
   ID        string
