@@ -56,7 +56,7 @@ brew up && brew upgrade notable
 ```
 
 ## Compiling from source
-The provided Homebrew binary is meant for being run on Mac OSX, but if you would like to run the CLI on Windows or Linux based systems, compiling from source is your answer.
+The provided Homebrew binary is meant for Mac OSX, but if you would like to run the CLI on Windows or Linux based systems, compiling from source is your answer.
 
 The Notable CLI is built in go, so install [go](https://golang.org) then clone down this repository into your working directory.
 
