@@ -27,7 +27,8 @@ import (
 
 var platformHost = "https://notable.zurb.com"
 var codeHost = "https://code.zurb.com"
-var version = "0.0.2"
+var version = "0.0.3"
+var captureDirectory = "notable_captures"
 var authPath string
 
 func check(e error) {
@@ -65,6 +66,8 @@ var envConfig = EnvConfig{}
 
 func main() {
   url := fmt.Sprintf("%s/api/cli/sites", codeHost)
+  directoryID := fmt.Sprintf("%s", uuid.NewV4())
+  captureDirectory = fmt.Sprintf("%s-%s", captureDirectory, directoryID)
   authRoot, err := homedir.Dir()
   if err != nil {
     color.Red("Cannot access your home directory to check for authentication.")
@@ -74,8 +77,10 @@ func main() {
   app := cli.NewApp()
   app.EnableBashCompletion = true
   app.Name = "notable"
-  app.Usage = "Interface with Notable"
+  app.Usage = "Interface with Notable (http://zurb.com/notable)"
   app.Version = version
+  app.Author = "Jordan Humphreys (jordan@zurb.com)"
+  app.Copyright = "ZURB, Inc. 2016 (http://zurb.com)"
 
   app.Commands = []cli.Command{
     {
@@ -219,7 +224,7 @@ func fetch(c CaptureConfig) {
     "--html-extension",
     "--convert-links",
     "--no-parent",
-    fmt.Sprintf("--directory-prefix=captures/%s", c.ID),
+    fmt.Sprintf("--directory-prefix=%s/%s", captureDirectory, c.ID),
     c.Url,
   }
   cmd := exec.Command("wget", args...)
@@ -257,7 +262,7 @@ func fetch(c CaptureConfig) {
 
 func zip(config CaptureConfig) {
   color.Cyan("Compressing...\n")
-  path := fmt.Sprintf("captures/%s", config.ID)
+  path := fmt.Sprintf("%s/%s", captureDirectory, config.ID)
   zip := new(archivex.ZipFile)
   zip.Create(path)
   zip.AddAll(path, true)
@@ -267,7 +272,7 @@ func zip(config CaptureConfig) {
 
 func upload(config CaptureConfig, url string) {
   color.Cyan("Uploading...\n")
-  path := fmt.Sprintf("%s/captures/%s.zip", currentPath(), config.ID)
+  path := fmt.Sprintf("%s/%s/%s.zip", currentPath(), captureDirectory, config.ID)
   post(path, config, url)
 }
 
@@ -334,7 +339,8 @@ func post(path string, config CaptureConfig, url string){
     panic(err)
   }
 
-  os.RemoveAll(path)
+  os.Remove(path)
+  os.Remove(fmt.Sprintf("%s/%s/", currentPath(), captureDirectory))
 
   color.Green("Done! Go give feedback!")
   responseUrl := data["url"].(string)
