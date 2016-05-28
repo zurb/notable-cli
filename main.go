@@ -17,6 +17,7 @@ import (
   "encoding/json"
 
   "github.com/skratchdot/open-golang/open"
+  "github.com/mitchellh/go-homedir"
   "github.com/deiwin/interact"
   "github.com/jhoonb/archivex"
   "github.com/satori/go.uuid"
@@ -26,8 +27,8 @@ import (
 
 var platformHost = "https://notable.zurb.com"
 var codeHost = "https://code.zurb.com"
-var version = "0.0.1"
-
+var version = "0.0.2"
+var authPath string
 
 func check(e error) {
   if e != nil {
@@ -64,6 +65,12 @@ var envConfig = EnvConfig{}
 
 func main() {
   url := fmt.Sprintf("%s/api/cli/sites", codeHost)
+  authRoot, err := homedir.Dir()
+  if err != nil {
+    color.Red("Cannot access your home directory to check for authentication.")
+    os.Exit(1)
+  }
+  authPath = fmt.Sprintf("%s/.notable_auth", authRoot)
   app := cli.NewApp()
   app.EnableBashCompletion = true
   app.Name = "notable"
@@ -146,13 +153,13 @@ func loadAndCheckEnv() {
 
 func writeAuth(t string) {
   token_data := []byte(t)
-  err := ioutil.WriteFile("._auth", token_data, 0644)
+  err := ioutil.WriteFile(authPath, token_data, 0644)
   check(err)
   color.Green("You are now authenticated with Notable!")
 }
 
 func removeAuth() {
-  err := os.Remove("._auth")
+  err := os.Remove(authPath)
 
   if err != nil {
     fmt.Println(err)
@@ -163,7 +170,7 @@ func removeAuth() {
 }
 
 func readAuth() (EnvConfig, error) {
-  file, err := ioutil.ReadFile("._auth")
+  file, err := ioutil.ReadFile(authPath)
 
   if err != nil {
     color.Red("You are not authenticated! Please run:")
@@ -327,7 +334,7 @@ func post(path string, config CaptureConfig, url string){
     panic(err)
   }
 
-  os.Remove(path)
+  os.RemoveAll(path)
 
   color.Green("Done! Go give feedback!")
   responseUrl := data["url"].(string)
