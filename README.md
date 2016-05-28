@@ -1,6 +1,18 @@
 # notable-cli
 
-This is a command line interface (CLI) for Notable. Right now it supports uploading sites to Notable Code.
+This is a command line interface (CLI) for Notable. Right now it supports uploading sites to Notable Code. **This currently only supports Mac OSX.**
+
+## Installing
+
+Use [Homebrew](http://brew.sh/) to install the Notable CLI.
+
+```
+brew tap zurb/notable
+brew install notable
+```
+
+You are now ready to go!
+
 
 ## Authenticate
 
