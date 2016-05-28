@@ -38,7 +38,7 @@ You can capture any URL, including local by running the `code` command. For inst
 notable code localhost:3000
 ```
 
-Your browser will automatically open, once captured, to the Notable Code site that you just uploaded.
+Your browser will automatically open, once captured, to the Notable Code site that you just uploaded. Sites are uploaded to the account that you have active on the website. Switching accounts on the site will change which account the site is added to.
 
 You can capture live sites the same way:
 
