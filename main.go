@@ -30,7 +30,7 @@ import (
 
 var platformHost = "https://notable.zurb.com"
 var codeHost = "https://code.zurb.com"
-var version = "0.0.6"
+var version = "0.0.7"
 var captureDirectoryPrefix = "notable-captures"
 var captureDirectory string
 var authPath string
