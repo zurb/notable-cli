@@ -28,7 +28,7 @@ notable logout
 Once authenticated, you can run any of the following commands.
 
 ## Upload to Notable Code
-Capture any URL, including local URLs, by running the `code` command followed by the address of the site to capture. For instance, if you have a local application running at `localhost:3000` then run the following command to upload it to Notable Code.
+Capture any URL, including local URLs, by running the `code` command followed by the address of the site to capture. For instance, if you have a local application running at `localhost:3000` then run the following command to upload it to [Notable Code](http://zurb.com/notable/features/code).
 
 ```
 notable code localhost:3000
