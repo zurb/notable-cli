@@ -32,16 +32,17 @@ var (
   platformHost = "https://notable.zurb.com"
   codeHost = "https://code.zurb.com"
   version = "0.0.8"
+  captureDirectoryPrefix = "notable-captures"
+
+  captureDirectory string
+  authPath string
+  s = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
   checkNotEmpty = func(input string) error {
     if input == "" {
       return errors.New("Input should not be empty!")
     }
     return nil
   }
-  captureDirectoryPrefix = "notable-captures"
-  captureDirectory string
-  authPath string
-  s = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
 )
 
 func check(e error) {
