@@ -1,5 +1,5 @@
 # Notable CLI
-This is a command line interface (CLI) for [Notable](http://zurb.com/notable), a design feedback application by [ZURB](http://zurb.com). Right now it supports uploading sites to Notable Code. **This currently only supports Mac OSX.** Other systems are supported by [compiling from source](https://github.com/zurb/notable-cli#compile-from-source).
+This is a command line interface (CLI) for [Notable](http://zurb.com/notable), a design feedback application by [ZURB](http://zurb.com). Right now it supports uploading sites to Notable Code. **This currently only supports Mac OSX.** Other systems are supported by [compiling from source](#compile-from-source).
 
 ## Install
 Use [Homebrew](http://brew.sh/) to install the Notable CLI.
