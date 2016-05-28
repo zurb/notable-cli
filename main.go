@@ -1,19 +1,14 @@
 package main
 
 import (
-  "bufio"
-  "bytes"
   "encoding/json"
   "errors"
   "fmt"
-  "io"
   "io/ioutil"
   "log"
-  "mime/multipart"
   "net/http"
   "net/url"
   "os"
-  "os/exec"
   "path/filepath"
   "time"
 
@@ -21,24 +16,17 @@ import (
   "github.com/deiwin/interact"
   "github.com/fatih/color"
   "github.com/howeyc/gopass"
-  "github.com/jhoonb/archivex"
   "github.com/mitchellh/go-homedir"
-  "github.com/satori/go.uuid"
-  "github.com/skratchdot/open-golang/open"
   "github.com/urfave/cli"
 )
 
 var (
-  captureDirectoryPrefix = "notable-captures"
-  platformHost           = "http://notable.dev"
-  codeHost               = "https://code.zurb.com"
-  notebooksHost          = "http://annotate.notable.dev"
-  version                = "0.0.8"
+  platformHost = "http://notable.dev"
+  version      = "0.0.8"
 
-  authPath         string
-  captureDirectory string
-  s                = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
-  checkNotEmpty    = func(input string) error {
+  authPath      string
+  s             = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
+  checkNotEmpty = func(input string) error {
     if input == "" {
       return errors.New("Input should not be empty!")
     }
@@ -52,16 +40,6 @@ func check(e error) {
   }
 }
 
-// CaptureConfig is the Code configuration object
-type CaptureConfig struct {
-  ID        string
-  Recursive string
-  URL       string
-  Agent     string
-  Path      string
-  AuthToken string
-}
-
 // EnvConfig is the global configuration object
 type EnvConfig struct {
   AuthToken string `json:"token"`
@@ -70,9 +48,6 @@ type EnvConfig struct {
 var envConfig = EnvConfig{}
 
 func main() {
-  url := fmt.Sprintf("%s/api/cli/sites", codeHost)
-  directoryID := fmt.Sprintf("%s", uuid.NewV4())
-  captureDirectory = fmt.Sprintf("%s-%s", captureDirectoryPrefix, directoryID)
   authRoot, err := homedir.Dir()
   if err != nil {
     color.Red("Cannot access your home directory to check for authentication.")
@@ -102,25 +77,23 @@ func main() {
       Action: func(c *cli.Context) error {
         loadAndCheckEnv()
 
-        id := fmt.Sprintf("%s", uuid.NewV4())
-        config := CaptureConfig{
-          Recursive: "false",
-          Agent:     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36",
-          URL:       c.Args().First(),
-          Path:      c.String("dest"),
-          ID:        id,
-        }
-
-        if len(config.Url) == 0 {
-          color.Red("Code requires a url to capture, example:")
-          color.White(fmt.Sprintf("%s code zurb.com", os.Args[0]))
-          os.Exit(1)
-        }
-
-        fetch(config)
-        zip(config)
-        upload(config, url)
+        runCode(c)
         return nil
+      },
+    },
+    {
+      Name:    "notebook",
+      Aliases: []string{"c"},
+      Usage:   "get design feedback on your images",
+      Subcommands: []cli.Command{
+        {
+          Name:  "create",
+          Usage: "create a new notebook",
+          Action: func(c *cli.Context) error {
+            runNotebook(c)
+            return nil
+          },
+        },
       },
     },
     {
@@ -229,150 +202,10 @@ func fetchToken(e string, p string) {
   }
 }
 
-func fetch(c CaptureConfig) {
-  wGetCheck()
-  s.Prefix = ""
-  s.Suffix = " Capture: running..."
-  s.Start()
-  args := []string{
-    fmt.Sprintf("-U '%s'", c.Agent),
-    "--no-clobber",
-    "--adjust-extension",
-    "--span-hosts",
-    "--page-requisites",
-    "--backup-converted",
-    "--html-extension",
-    "--convert-links",
-    "--no-parent",
-    fmt.Sprintf("--directory-prefix=%s/%s", captureDirectory, c.ID),
-    c.URL,
-  }
-  cmd := exec.Command("wget", args...)
-
-  cmdReader, err := cmd.StdoutPipe()
-  if err != nil {
-    fmt.Fprintln(os.Stderr, "Error creating StdoutPipe for Notable", err)
-    os.Exit(1)
-  }
-
-  scanner := bufio.NewScanner(cmdReader)
-
-  go func() {
-    for scanner.Scan() {
-      fmt.Printf("Notable capture | %s\n", scanner.Text())
-    }
-  }()
-
-  err = cmd.Start()
-  if err != nil {
-    fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
-    os.Exit(1)
-  }
-
-  err = cmd.Wait()
-  if err != nil {
-    text := fmt.Sprintf("%s", err)
-    if text == "exit status 4" {
-      color.Red("The URL you specified is not accessible.")
-      os.Exit(1)
-    }
-  }
-  s.Stop()
-  color.Cyan("✓ Capture: complete!\n")
-
-}
-
-func zip(config CaptureConfig) {
-  s.Suffix = " Compress: running..."
-  s.Start()
-  path := fmt.Sprintf("%s/%s", captureDirectory, config.ID)
-  zip := new(archivex.ZipFile)
-  zip.Create(path)
-  zip.AddAll(path, true)
-  zip.Close()
-  os.RemoveAll(path)
-  s.Stop()
-  color.Cyan("✓ Compress: complete!\n")
-}
-
-func upload(config CaptureConfig, url string) {
-  s.Suffix = " Upload: running..."
-  s.Start()
-  path := fmt.Sprintf("%s/%s/%s.zip", currentPath(), captureDirectory, config.ID)
-  post(path, config, url)
-}
-
-func wGetCheck() {
-  _, err := exec.LookPath("wget")
-  if err != nil {
-    color.Red("Missing dependency!\n")
-    color.Red("Please install wget using Homebrew or some other fancy way:\n")
-    color.Green("brew up && brew install wget\n")
-    os.Exit(1)
-  }
-}
-
 func currentPath() string {
   dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
   if err != nil {
     log.Fatal(err)
   }
   return dir
-}
-
-func post(path string, config CaptureConfig, url string) {
-  file, err := os.Open(path)
-  if err != nil {
-    log.Fatal(err)
-  }
-  defer file.Close()
-
-  /* Create a buffer to hold this multi-part form */
-  bodyBuf := bytes.NewBufferString("")
-  bodyWriter := multipart.NewWriter(bodyBuf)
-  contentType := bodyWriter.FormDataContentType()
-
-  /* Create a Form Field in a simpler way */
-  bodyWriter.WriteField("name", config.URL)
-  bodyWriter.WriteField("token", envConfig.AuthToken)
-
-  /* Create a completely custom Form Part (or in this case, a file) */
-  // http://golang.org/src/pkg/mime/multipart/writer.go?s=2274:2352#L86
-  part, err := bodyWriter.CreateFormFile("upload", filepath.Base(path))
-  if err != nil {
-    log.Fatal(err)
-  }
-  _, err = io.Copy(part, file)
-
-  /* Close the body and send the request */
-  bodyWriter.Close()
-  resp, err := http.Post(url, contentType, bodyBuf)
-  if nil != err {
-    panic(err.Error())
-  }
-
-  /* Handle the response */
-  defer resp.Body.Close()
-  body, err := ioutil.ReadAll(resp.Body)
-
-  if nil != err {
-    fmt.Println("Error happened reading the body", err)
-    return
-  }
-
-  var data map[string]interface{}
-  if err := json.Unmarshal(body, &data); err != nil {
-    panic(err)
-  }
-
-  os.Remove(path)
-  os.Remove(fmt.Sprintf("%s/%s/", currentPath(), captureDirectory))
-
-  s.Stop()
-  color.Cyan("✓ Upload: complete!\n\n")
-  color.Cyan("Done! Go give feedback!")
-  responseURL := data["url"].(string)
-  color.Magenta(responseURL)
-
-  open.Run(responseURL)
 }
