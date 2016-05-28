@@ -1,43 +1,44 @@
 package main
 
 import (
-  "bytes"
   "bufio"
-  "fmt"
-  "os"
-  "io"
-  "time"
+  "bytes"
+  "encoding/json"
   "errors"
+  "fmt"
+  "io"
   "io/ioutil"
   "log"
-  "net/url"
-  "os/exec"
-  "net/http"
   "mime/multipart"
+  "net/http"
+  "net/url"
+  "os"
+  "os/exec"
   "path/filepath"
-  "encoding/json"
+  "time"
 
-  "github.com/skratchdot/open-golang/open"
-  "github.com/mitchellh/go-homedir"
   "github.com/briandowns/spinner"
   "github.com/deiwin/interact"
-  "github.com/jhoonb/archivex"
-  "github.com/satori/go.uuid"
-  "github.com/howeyc/gopass"
   "github.com/fatih/color"
+  "github.com/howeyc/gopass"
+  "github.com/jhoonb/archivex"
+  "github.com/mitchellh/go-homedir"
+  "github.com/satori/go.uuid"
+  "github.com/skratchdot/open-golang/open"
   "github.com/urfave/cli"
 )
 
 var (
   captureDirectoryPrefix = "notable-captures"
-  platformHost = "https://notable.zurb.com"
-  codeHost = "https://code.zurb.com"
-  version = "0.0.8"
+  platformHost           = "http://notable.dev"
+  codeHost               = "https://code.zurb.com"
+  notebooksHost          = "http://annotate.notable.dev"
+  version                = "0.0.8"
 
-  authPath string
+  authPath         string
   captureDirectory string
-  s = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
-  checkNotEmpty = func(input string) error {
+  s                = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
+  checkNotEmpty    = func(input string) error {
     if input == "" {
       return errors.New("Input should not be empty!")
     }
@@ -51,18 +52,19 @@ func check(e error) {
   }
 }
 
+// CaptureConfig is the Code configuration object
 type CaptureConfig struct {
   ID        string
   Recursive string
-  Url       string
+  URL       string
   Agent     string
   Path      string
   AuthToken string
 }
 
-// Configuration is the global configuration object
+// EnvConfig is the global configuration object
 type EnvConfig struct {
-  AuthToken      string `json:"token"`
+  AuthToken string `json:"token"`
 }
 
 var envConfig = EnvConfig{}
@@ -87,12 +89,12 @@ func main() {
 
   app.Commands = []cli.Command{
     {
-      Name:      "code",
-      Aliases:   []string{"c"},
-      Usage:     "Send site to Notable, local or live!",
-      Flags: []cli.Flag {
+      Name:    "code",
+      Aliases: []string{"c"},
+      Usage:   "Send site to Notable, local or live!",
+      Flags: []cli.Flag{
         cli.StringFlag{
-          Name: "dest, d",
+          Name:  "dest, d",
           Value: ".",
           Usage: "destination",
         },
@@ -103,10 +105,10 @@ func main() {
         id := fmt.Sprintf("%s", uuid.NewV4())
         config := CaptureConfig{
           Recursive: "false",
-          Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36",
-          Url: c.Args().First(),
-          Path: c.String("dest"),
-          ID: id,
+          Agent:     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36",
+          URL:       c.Args().First(),
+          Path:      c.String("dest"),
+          ID:        id,
         }
 
         if len(config.Url) == 0 {
@@ -122,9 +124,9 @@ func main() {
       },
     },
     {
-      Name:      "login",
-      Aliases:   []string{"l"},
-      Usage:     "Authenticate the CLI",
+      Name:    "login",
+      Aliases: []string{"l"},
+      Usage:   "Authenticate the CLI",
       Action: func(c *cli.Context) error {
         actor := interact.NewActor(os.Stdin, os.Stdout)
         message := "Please enter your Notable email address"
@@ -143,9 +145,9 @@ func main() {
       },
     },
     {
-      Name:      "logout",
-      Aliases:   []string{"lo"},
-      Usage:     "Deauthorize this computer",
+      Name:    "logout",
+      Aliases: []string{"lo"},
+      Usage:   "Deauthorize this computer",
       Action: func(c *cli.Context) error {
         removeAuth()
         return nil
@@ -167,8 +169,8 @@ func loadAndCheckEnv() {
 }
 
 func writeAuth(t string) {
-  token_data := []byte(t)
-  err := ioutil.WriteFile(authPath, token_data, 0644)
+  tokenData := []byte(t)
+  err := ioutil.WriteFile(authPath, tokenData, 0644)
   check(err)
   color.Green("You are now authenticated with Notable!")
 }
@@ -243,7 +245,7 @@ func fetch(c CaptureConfig) {
     "--convert-links",
     "--no-parent",
     fmt.Sprintf("--directory-prefix=%s/%s", captureDirectory, c.ID),
-    c.Url,
+    c.URL,
   }
   cmd := exec.Command("wget", args...)
 
@@ -318,7 +320,7 @@ func currentPath() string {
   return dir
 }
 
-func post(path string, config CaptureConfig, url string){
+func post(path string, config CaptureConfig, url string) {
   file, err := os.Open(path)
   if err != nil {
     log.Fatal(err)
@@ -326,25 +328,25 @@ func post(path string, config CaptureConfig, url string){
   defer file.Close()
 
   /* Create a buffer to hold this multi-part form */
-  body_buf := bytes.NewBufferString("")
-  body_writer := multipart.NewWriter(body_buf)
-  content_type := body_writer.FormDataContentType()
+  bodyBuf := bytes.NewBufferString("")
+  bodyWriter := multipart.NewWriter(bodyBuf)
+  contentType := bodyWriter.FormDataContentType()
 
   /* Create a Form Field in a simpler way */
-  body_writer.WriteField("name", config.Url)
-  body_writer.WriteField("token", envConfig.AuthToken)
+  bodyWriter.WriteField("name", config.URL)
+  bodyWriter.WriteField("token", envConfig.AuthToken)
 
   /* Create a completely custom Form Part (or in this case, a file) */
   // http://golang.org/src/pkg/mime/multipart/writer.go?s=2274:2352#L86
-  part, err := body_writer.CreateFormFile("upload", filepath.Base(path))
+  part, err := bodyWriter.CreateFormFile("upload", filepath.Base(path))
   if err != nil {
     log.Fatal(err)
   }
   _, err = io.Copy(part, file)
 
   /* Close the body and send the request */
-  body_writer.Close()
-  resp, err := http.Post(url, content_type, body_buf)
+  bodyWriter.Close()
+  resp, err := http.Post(url, contentType, bodyBuf)
   if nil != err {
     panic(err.Error())
   }
@@ -369,8 +371,8 @@ func post(path string, config CaptureConfig, url string){
   s.Stop()
   color.Cyan("✓ Upload: complete!\n\n")
   color.Cyan("Done! Go give feedback!")
-  responseUrl := data["url"].(string)
-  color.Magenta(responseUrl)
+  responseURL := data["url"].(string)
+  color.Magenta(responseURL)
 
-  open.Run(responseUrl)
+  open.Run(responseURL)
 }
