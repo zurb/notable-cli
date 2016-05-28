@@ -10,6 +10,12 @@ Before you can use the CLI, you must authenticate it with your Notable account.
 ./notable-cli login
 ```
 
+You can log out by running:
+
+```
+./notable-cli logout
+```
+
 Once authenticated, you can run any of the following commands.
 
 ## Upload to Notable Code
