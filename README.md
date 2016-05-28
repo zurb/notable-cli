@@ -39,3 +39,15 @@ notable code localhost:3000
 ```
 
 Your browser will automatically open, once captured, to the Notable Code site that you just uploaded.
+
+You can capture live sites the same way:
+
+```
+notable code http://www.nytimes.com/
+```
+
+Or you can use the shorthand command:
+
+```
+notable c http://zurb.com/notable
+```
