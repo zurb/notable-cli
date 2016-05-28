@@ -19,7 +19,7 @@ Before you can use the CLI, you must authenticate it with your [Notable](http://
 notable login
 ```
 
-You can log out by running:
+Logout by running:
 
 ```
 notable logout
@@ -28,29 +28,46 @@ notable logout
 Once authenticated, you can run any of the following commands.
 
 ## Upload to Notable Code
-You can capture any URL, including local by running the `code` command. For instance, if you have a local application running at `localhost:3000` then you can run the following command to upload it to Notable Code.
+Capture any URL, including local by running the `code` command. For instance, if you have a local application running at `localhost:3000` then run the following command to upload it to Notable Code.
 
 ```
 notable code localhost:3000
 ```
 
-Your browser will automatically open, once captured, to the Notable Code site that you just uploaded. Sites are uploaded to the account that you have active on the website. Switching accounts on the site will change which account the site is added to.
+Your browser will automatically open, once captured, to the Notable Code site that you just uploaded.
 
-You can capture live sites the same way:
+Capture live sites the same way:
 
 ```
 notable code http://www.nytimes.com/
 ```
 
-Or you can use the shorthand command:
+Or use the shorthand command:
 
 ```
 notable c http://zurb.com/notable
 ```
 
 ## Upgrading
-To get the latest changes to the Notable CLI you can run the following command:
+To get the latest changes to the Notable CLI, run the following command:
 
 ```
 brew up && brew upgrade notable
 ```
+
+## Compiling from source
+The provided Homebrew binary is meant for being run on Mac OSX, but if you would like to run the CLI on Windows or Linux based systems, compiling from source is your answer.
+
+The Notable CLI is built in go, so install [go](https://golang.org) then clone down this repository into your working directory.
+
+```
+go get github.com/zurb/notable-cli
+```
+
+Then build it:
+
+```
+go build -o notable
+```
+
+That's it! You now have an executable binary for your OS.
