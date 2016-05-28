@@ -1,11 +1,11 @@
 # Notable CLI
 This is a command line interface (CLI) for [Notable](http://zurb.com/notable), a design feedback application by [ZURB](http://zurb.com). Right now it supports uploading sites to Notable Code. **This currently only supports Mac OSX.**
 
-## Installing
+## Install
 Use [Homebrew](http://brew.sh/) to install the Notable CLI.
 
 ```
-brew tap zurb/notable
+brew tap zurb/tap
 brew install notable
 ```
 
@@ -48,14 +48,14 @@ Or use the shorthand command:
 notable c http://zurb.com/notable
 ```
 
-## Upgrading
+## Upgrade
 To get the latest changes to the Notable CLI, run the following command:
 
 ```
 brew up && brew upgrade notable
 ```
 
-## Compiling from source
+## Compile from source
 The provided Homebrew binary is meant for Mac OSX, but if you would like to run the CLI on Windows or Linux based systems, compiling from source is your answer.
 
 The Notable CLI is built in go, so install [go](https://golang.org) then clone down this repository into your working directory.
