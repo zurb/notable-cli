@@ -26,6 +26,7 @@ import (
 
 var platformHost = "https://notable.zurb.com"
 var codeHost = "https://code.zurb.com"
+var version = "0.0.1"
 
 
 func check(e error) {
@@ -67,6 +68,7 @@ func main() {
   app.EnableBashCompletion = true
   app.Name = "notable"
   app.Usage = "Interface with Notable"
+  app.Version = version
 
   app.Commands = []cli.Command{
     {
