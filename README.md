@@ -1,6 +1,6 @@
 # notable-cli
 
-This is a command line interface (CLI) for Notable. Right now it supports uploading sites to Notable Code. **This currently only supports Mac OSX.**
+This is a command line interface (CLI) for [Notable](http://zurb.com/notable). Right now it supports uploading sites to Notable Code. **This currently only supports Mac OSX.**
 
 ## Installing
 
