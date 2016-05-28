@@ -21,13 +21,14 @@ import (
   "github.com/deiwin/interact"
   "github.com/jhoonb/archivex"
   "github.com/satori/go.uuid"
+  "github.com/howeyc/gopass"
   "github.com/fatih/color"
   "github.com/urfave/cli"
 )
 
 var platformHost = "https://notable.zurb.com"
 var codeHost = "https://code.zurb.com"
-var version = "0.0.3"
+var version = "0.0.4"
 var captureDirectory = "notable_captures"
 var authPath string
 
@@ -123,12 +124,13 @@ func main() {
         if err != nil {
           log.Fatal(err)
         }
-        message = "Please enter your Notable password"
-        password, err := actor.PromptAndRetry(message, checkNotEmpty)
+
+        fmt.Printf("Please enter your Notable password: ")
+        password, err := gopass.GetPasswdMasked()
         if err != nil {
           log.Fatal(err)
         }
-        fetchToken(email, password)
+        fetchToken(email, string(password))
         return nil
       },
     },
