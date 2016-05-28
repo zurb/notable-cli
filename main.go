@@ -29,13 +29,13 @@ import (
 )
 
 var (
+  captureDirectoryPrefix = "notable-captures"
   platformHost = "https://notable.zurb.com"
   codeHost = "https://code.zurb.com"
   version = "0.0.8"
-  captureDirectoryPrefix = "notable-captures"
 
-  captureDirectory string
   authPath string
+  captureDirectory string
   s = spinner.New(spinner.CharSets[6], 100*time.Millisecond)
   checkNotEmpty = func(input string) error {
     if input == "" {
