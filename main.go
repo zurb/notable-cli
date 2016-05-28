@@ -24,6 +24,9 @@ import (
   "github.com/urfave/cli"
 )
 
+var platformHost = "https://notable.zurb.com"
+var codeHost = "https://code.zurb.com"
+
 
 func check(e error) {
   if e != nil {
@@ -59,7 +62,7 @@ type EnvConfig struct {
 var envConfig = EnvConfig{}
 
 func main() {
-  url := "http://code.notable.dev/api/cli/sites"
+  url := fmt.Sprintf("%s/api/cli/sites", codeHost)
   app := cli.NewApp()
   app.EnableBashCompletion = true
   app.Name = "notable"
@@ -69,17 +72,12 @@ func main() {
     {
       Name:      "code",
       Aliases:   []string{"c"},
-      Usage:     "Send local site to Notable",
+      Usage:     "Send site to Notable, local or live!",
       Flags: []cli.Flag {
         cli.StringFlag{
           Name: "dest, d",
           Value: ".",
           Usage: "destination",
-        },
-        cli.StringFlag{
-          Name: "token, t",
-          Value: "empty",
-          Usage: "User Auth Token",
         },
       },
       Action: func(c *cli.Context) error {
@@ -116,8 +114,16 @@ func main() {
         if err != nil {
           log.Fatal(err)
         }
-        // TODO: post login and get auth token
         fetchToken(email, password)
+        return nil
+      },
+    },
+    {
+      Name:      "logout",
+      Aliases:   []string{"lo"},
+      Usage:     "Deauthorize this computer",
+      Action: func(c *cli.Context) error {
+        removeAuth()
         return nil
       },
     },
@@ -140,13 +146,27 @@ func writeAuth(t string) {
   token_data := []byte(t)
   err := ioutil.WriteFile("._auth", token_data, 0644)
   check(err)
+  color.Green("You are now authenticated with Notable!")
+}
+
+func removeAuth() {
+  err := os.Remove("._auth")
+
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+
+  color.Green("Signed out successfully!")
 }
 
 func readAuth() (EnvConfig, error) {
   file, err := ioutil.ReadFile("._auth")
 
   if err != nil {
-    return EnvConfig{}, err
+    color.Red("You are not authenticated! Please run:")
+    color.Green("%s login", os.Args[0])
+    os.Exit(1)
   }
 
   return EnvConfig{
@@ -155,7 +175,7 @@ func readAuth() (EnvConfig, error) {
 }
 
 func fetchToken(e string, p string) {
-  endpoint := "http://notable.dev/api/v5/platform_users/auth_cli"
+  endpoint := fmt.Sprintf("%s/api/v5/platform_users/auth_cli", platformHost)
   v := url.Values{}
   v.Set("email", e)
   v.Add("password", p)
@@ -170,6 +190,10 @@ func fetchToken(e string, p string) {
   body, err := ioutil.ReadAll(resp.Body)
 
   err = json.Unmarshal(body, &envConfig)
+  if err != nil {
+    fmt.Printf("ERROR: %s", err)
+    os.Exit(1)
+  }
   writeAuth(envConfig.AuthToken)
 }
 
@@ -208,14 +232,14 @@ func fetch(c CaptureConfig) {
   err = cmd.Start()
   if err != nil {
     fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
-    // os.Exit(1)
+    os.Exit(1)
   }
 
   err = cmd.Wait()
   if err != nil {
     text := fmt.Sprintf("%s", err)
     if text == "exit status 4" {
-      fmt.Fprintln(os.Stderr, "The URL you specified is not accessible.")
+      color.Red("The URL you specified is not accessible.")
       os.Exit(1)
     }
   }
@@ -229,6 +253,7 @@ func zip(config CaptureConfig) {
   zip.Create(path)
   zip.AddAll(path, true)
   zip.Close()
+  os.RemoveAll(path)
 }
 
 func upload(config CaptureConfig, url string) {
@@ -240,9 +265,11 @@ func upload(config CaptureConfig, url string) {
 func wGetCheck() {
   _, err := exec.LookPath("wget")
   if err != nil {
-    log.Fatal("\n\n[ERROR] Please install wget using Homebrew:\nbrew up && brew install wget")
+    color.Red("Missing dependency!\n")
+    color.Red("Please install wget using Homebrew or some other fancy way:\n")
+    color.Green("brew up && brew install wget\n")
+    os.Exit(1)
   }
-  // fmt.Printf("\nwget is available at %s\n", path)
 }
 
 func currentPath() string {
@@ -263,10 +290,7 @@ func post(path string, config CaptureConfig, url string){
   /* Create a buffer to hold this multi-part form */
   body_buf := bytes.NewBufferString("")
   body_writer := multipart.NewWriter(body_buf)
-  // boundary := body_writer.Boundary()
-  // fmt.Println(boundary)
   content_type := body_writer.FormDataContentType()
-  // fmt.Println(content_type)
 
   /* Create a Form Field in a simpler way */
   body_writer.WriteField("name", config.Url)
@@ -292,7 +316,7 @@ func post(path string, config CaptureConfig, url string){
   body, err := ioutil.ReadAll(resp.Body)
 
   if nil != err {
-    fmt.Println("errorination happened reading the body", err)
+    fmt.Println("Error happened reading the body", err)
     return
   }
 
@@ -301,7 +325,11 @@ func post(path string, config CaptureConfig, url string){
     panic(err)
   }
 
-  color.Green("Done! Go give feedback!")
+  os.Remove(path)
 
-  open.Run(data["url"].(string))
+  color.Green("Done! Go give feedback!")
+  responseUrl := data["url"].(string)
+  color.Magenta(responseUrl)
+
+  open.Run(responseUrl)
 }
