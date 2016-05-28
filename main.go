@@ -28,7 +28,7 @@ import (
 
 var platformHost = "https://notable.zurb.com"
 var codeHost = "https://code.zurb.com"
-var version = "0.0.4"
+var version = "0.0.5"
 var captureDirectory = "notable_captures"
 var authPath string
 
@@ -105,6 +105,12 @@ func main() {
           Url: c.Args().First(),
           Path: c.String("dest"),
           ID: id,
+        }
+
+        if len(config.Url) == 0 {
+          color.Red("Code requires a url to capture, example:")
+          color.White(fmt.Sprintf("%s code zurb.com", os.Args[0]))
+          os.Exit(1)
         }
 
         fetch(config)
@@ -210,7 +216,13 @@ func fetchToken(e string, p string) {
     fmt.Printf("ERROR: %s", err)
     os.Exit(1)
   }
-  writeAuth(envConfig.AuthToken)
+
+  if len(envConfig.AuthToken) != 0 {
+    writeAuth(envConfig.AuthToken)
+  } else {
+    color.Red("Invalid credentials! Try again.")
+    os.Exit(1)
+  }
 }
 
 func fetch(c CaptureConfig) {
