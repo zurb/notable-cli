@@ -82,8 +82,6 @@ func postNotebook(images []string) {
     }
     defer file.Close()
 
-    // paramName := fmt.Sprintf("image[]", index)
-
     /* Create a completely custom Form Part (or in this case, a file) */
     // http://golang.org/src/pkg/mime/multipart/writer.go?s=2274:2352#L86
     part, err := bodyWriter.CreateFormFile("image[]", filepath.Base(path))
@@ -117,18 +115,10 @@ func postNotebook(images []string) {
     panic(err)
   }
 
-  if data["error"] != nil {
-    color.Red("\nYour Notable credentials are invalid, please login again:\n")
-    color.White("%s login", os.Args[0])
-    os.Exit(1)
-  }
-
-  fmt.Println(data)
-
   s.Stop()
   color.Cyan("✓ Upload: complete!\n\n")
   color.Cyan("Done! Go give feedback!")
-  responseURL := data["url"].(string)
+  responseURL := data["dashboard_item_url"].(string)
   color.Magenta(responseURL)
 
   open.Run(responseURL)
