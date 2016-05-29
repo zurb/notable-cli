@@ -130,3 +130,13 @@ func currentPath() string {
   }
   return dir
 }
+
+func wGetCheck() {
+  _, err := exec.LookPath("wget")
+  if err != nil {
+    color.Red("Missing dependency!\n")
+    color.Red("Please install wget using Homebrew or some other fancy way:\n")
+    color.Green("brew up && brew install wget\n")
+    os.Exit(1)
+  }
+}

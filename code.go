@@ -57,12 +57,12 @@ func runCode(c *cli.Context) {
     os.Exit(1)
   }
 
-  fetch(config)
-  zip(config)
-  upload(config, url)
+  fetchCode(config)
+  zipCode(config)
+  uploadCode(config, url)
 }
 
-func fetch(c CaptureConfig) {
+func fetchCode(c CaptureConfig) {
   wGetCheck()
   s.Prefix = ""
   s.Suffix = " Capture: running..."
@@ -115,7 +115,7 @@ func fetch(c CaptureConfig) {
 
 }
 
-func zip(config CaptureConfig) {
+func zipCode(config CaptureConfig) {
   s.Suffix = " Compress: running..."
   s.Start()
   path := fmt.Sprintf("%s/%s", captureDirectory, config.ID)
@@ -128,24 +128,14 @@ func zip(config CaptureConfig) {
   color.Cyan("✓ Compress: complete!\n")
 }
 
-func upload(config CaptureConfig, url string) {
+func uploadCode(config CaptureConfig, url string) {
   s.Suffix = " Upload: running..."
   s.Start()
   path := fmt.Sprintf("%s/%s/%s.zip", currentPath(), captureDirectory, config.ID)
-  post(path, config, url)
+  postCode(path, config, url)
 }
 
-func wGetCheck() {
-  _, err := exec.LookPath("wget")
-  if err != nil {
-    color.Red("Missing dependency!\n")
-    color.Red("Please install wget using Homebrew or some other fancy way:\n")
-    color.Green("brew up && brew install wget\n")
-    os.Exit(1)
-  }
-}
-
-func post(path string, config CaptureConfig, url string) {
+func postCode(path string, config CaptureConfig, url string) {
   file, err := os.Open(path)
   if err != nil {
     log.Fatal(err)

@@ -28,7 +28,7 @@ func runAuth(c *cli.Context) {
   if err != nil {
     log.Fatal(err)
   }
-  fetchToken(email, string(password))
+  fetchAuth(email, string(password))
 }
 
 func writeAuth(t string) {
@@ -63,7 +63,7 @@ func readAuth() (EnvConfig, error) {
   }, nil
 }
 
-func fetchToken(e string, p string) {
+func fetchAuth(e string, p string) {
   endpoint := fmt.Sprintf("%s/api/v5/platform_users/auth_cli", platformHost)
   v := url.Values{}
   v.Set("email", e)
