@@ -185,8 +185,6 @@ func post(path string, config CaptureConfig, url string) {
     return
   }
 
-  // fmt.Printf("%s", body)
-
   var data map[string]interface{}
   if err := json.Unmarshal(body, &data); err != nil {
     panic(err)
