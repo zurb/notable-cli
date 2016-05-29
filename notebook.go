@@ -1,23 +1,31 @@
 package main
 
 import (
+  "bytes"
+  "encoding/json"
   "fmt"
+  "github.com/fatih/color"
+  "github.com/skratchdot/open-golang/open"
   "github.com/urfave/cli"
+  "io"
+  "io/ioutil"
+  "log"
+  "mime/multipart"
+  "net/http"
   "os"
   "path/filepath"
 )
 
 var (
+  notebookHost        = "http://annotate.notable.dev"
   supportedExtensions = []string{".jpg", ".jpeg", ".png", ".gif"}
 )
 
 func runNotebook(c *cli.Context) {
   // get images
   images := findImages()
-
-  fmt.Printf("%s", images)
-  fmt.Println(len(images))
   // send multipart form data
+  postNotebook(images)
   // open set in Notebooks
 }
 
@@ -32,7 +40,6 @@ func stringInSlice(str string, list []string) bool {
 
 func findImages() []string {
   images := []string{}
-  dirname := "." + string(filepath.Separator)
 
   d, err := os.Open(currentPath())
   if err != nil {
@@ -58,4 +65,71 @@ func findImages() []string {
   }
 
   return images
+}
+
+func postNotebook(images []string) {
+  url := fmt.Sprintf("%s/api/v1/posts", notebookHost)
+  /* Create a buffer to hold this multi-part form */
+  bodyBuf := bytes.NewBufferString("")
+  bodyWriter := multipart.NewWriter(bodyBuf)
+  contentType := bodyWriter.FormDataContentType()
+
+  for _, name := range images {
+    path := fmt.Sprintf("%s/%s", currentPath(), name)
+    file, err := os.Open(path)
+    if err != nil {
+      log.Fatal(err)
+    }
+    defer file.Close()
+
+    // paramName := fmt.Sprintf("image[]", index)
+
+    /* Create a completely custom Form Part (or in this case, a file) */
+    // http://golang.org/src/pkg/mime/multipart/writer.go?s=2274:2352#L86
+    part, err := bodyWriter.CreateFormFile("image[]", filepath.Base(path))
+    if err != nil {
+      log.Fatal(err)
+    }
+    _, err = io.Copy(part, file)
+  }
+
+  /* Create a Form Field in a simpler way */
+  bodyWriter.WriteField("name", url)
+  bodyWriter.WriteField("current_platform_user_token", envConfig.AuthToken)
+  /* Close the body and send the request */
+  bodyWriter.Close()
+  resp, err := http.Post(url, contentType, bodyBuf)
+  if nil != err {
+    panic(err.Error())
+  }
+
+  /* Handle the response */
+  defer resp.Body.Close()
+  body, err := ioutil.ReadAll(resp.Body)
+
+  if nil != err {
+    fmt.Println("Error happened reading the body", err)
+    return
+  }
+
+  var data map[string]interface{}
+  if err := json.Unmarshal(body, &data); err != nil {
+    panic(err)
+  }
+
+  if data["error"] != nil {
+    color.Red("\nYour Notable credentials are invalid, please login again:\n")
+    color.White("%s login", os.Args[0])
+    os.Exit(1)
+  }
+
+  fmt.Println(data)
+
+  s.Stop()
+  color.Cyan("✓ Upload: complete!\n\n")
+  color.Cyan("Done! Go give feedback!")
+  responseURL := data["url"].(string)
+  color.Magenta(responseURL)
+
+  open.Run(responseURL)
 }
