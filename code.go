@@ -22,7 +22,7 @@ import (
 )
 
 var (
-  codeHost               = "http://code.notable.dev"
+  codeHost               = "https://code.zurb.com"
   captureDirectoryPrefix = "notable-captures"
   captureDirectory       string
 )

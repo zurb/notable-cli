@@ -16,8 +16,8 @@ import (
 )
 
 var (
-  platformHost = "http://notable.dev"
-  version      = "0.0.8"
+  platformHost = "https://notable.zurb.com"
+  version      = "0.1.0"
 
   authPath      string
   s             = spinner.New(spinner.CharSets[6], 100*time.Millisecond)

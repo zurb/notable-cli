@@ -17,7 +17,7 @@ import (
 )
 
 var (
-  notebookHost        = "http://annotate.notable.dev"
+  notebookHost        = "https://notebooks.zurb.com"
   supportedExtensions = []string{".jpg", ".jpeg", ".png", ".gif"}
 )
 
