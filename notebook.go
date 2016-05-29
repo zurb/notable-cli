@@ -13,7 +13,10 @@ var (
 
 func runNotebook(c *cli.Context) {
   // get images
-  findImages()
+  images := findImages()
+
+  fmt.Printf("%s", images)
+  fmt.Println(len(images))
   // send multipart form data
   // open set in Notebooks
 }
@@ -27,7 +30,8 @@ func stringInSlice(str string, list []string) bool {
   return false
 }
 
-func findImages() {
+func findImages() []string {
+  images := []string{}
   dirname := "." + string(filepath.Separator)
 
   d, err := os.Open(currentPath())
@@ -43,15 +47,15 @@ func findImages() {
     os.Exit(1)
   }
 
-  fmt.Println("Reading " + dirname)
-
   for _, file := range files {
     if file.Mode().IsRegular() {
       ext := filepath.Ext(file.Name())
       // fmt.Printf("%s\n", ext)
       if stringInSlice(ext, supportedExtensions) {
-        fmt.Println(file.Name())
+        images = append(images, file.Name())
       }
     }
   }
+
+  return images
 }
