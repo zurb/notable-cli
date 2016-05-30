@@ -4,6 +4,7 @@ import (
   "bytes"
   "encoding/json"
   "fmt"
+  "github.com/deiwin/interact"
   "github.com/fatih/color"
   "github.com/skratchdot/open-golang/open"
   "github.com/urfave/cli"
@@ -22,10 +23,19 @@ var (
 )
 
 func runNotebook(c *cli.Context) {
+  actor := interact.NewActor(os.Stdin, os.Stdout)
+  def := interact.ConfirmDefaultToYes
   // get images
   images := findImages()
+  message := fmt.Sprintf("We found %x images to send to Notable. Continue?", len(images))
+  confirmed, err := actor.Confirm(message, def)
+  if err != nil {
+    log.Fatal(err)
+  }
   // send multipart form data
-  postNotebook(images)
+  if confirmed {
+    postNotebook(images)
+  }
   // open set in Notebooks
 }
 
