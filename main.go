@@ -77,7 +77,7 @@ func main() {
     },
     {
       Name:    "notebook",
-      Aliases: []string{"c"},
+      Aliases: []string{"n"},
       Usage:   "get design feedback on your images",
       Subcommands: []cli.Command{
         {
