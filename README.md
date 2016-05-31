@@ -27,6 +27,13 @@ notable logout
 
 Once authenticated, you can run any of the following commands.
 
+## Upgrade
+To get the latest changes to the Notable CLI, run the following command:
+
+```
+brew up && brew upgrade notable
+```
+
 ## Upload to Notable Code
 Capture any URL, including local URLs, by running the `code` command followed by the address of the site to capture. For instance, if you have a local application running at `localhost:3000` then run the following command to upload it to [Notable Code](http://zurb.com/notable/features/code).
 
@@ -48,12 +55,14 @@ Or use the shorthand command:
 notable c http://zurb.com/notable
 ```
 
-## Upgrade
-To get the latest changes to the Notable CLI, run the following command:
+## Upload to Notable Notebooks
+You can create a Notebook from a directory of images by running the following command from _inside_ the directory you want to upload.
 
 ```
-brew up && brew upgrade notable
+notable notebook create
 ```
+
+This command will upload all images in the current directory and open the Notebook in your browser when done.
 
 ## Compile from source
 The provided Homebrew binary is meant for Mac OSX, but if you would like to run the CLI on Windows or Linux based systems, compiling from source is your answer.
