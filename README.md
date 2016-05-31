@@ -49,7 +49,7 @@ Capture live sites the same way:
 notable code http://www.nytimes.com/
 ```
 
-Or use the shorthand command:
+Or use the shorcut:
 
 ```
 notable c http://zurb.com/notable
@@ -63,6 +63,12 @@ notable notebook create
 ```
 
 This command will upload all images in the current directory and open the Notebook in your browser when done.
+
+Or use the shortcut:
+
+```
+notable n create
+```
 
 ## Compile from source
 The provided Homebrew binary is meant for Mac OSX, but if you would like to run the CLI on Windows or Linux based systems, compiling from source is your answer.
